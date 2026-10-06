@@ -1,13 +1,30 @@
-const express = require("express");
+require("dotenv").config();
 
+const express = require("express");
+const db=require("./config/db");
 const app= express();
 
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;;
 
 app.get("/", (req,res) => {
     res.json({ 
         message: "JOb Tracker API is running",
     });
+});
+
+app.get("/api/test-db", async (req,res) => {
+    try {
+        const [rows] = await db.query("SELECT 1 as result");
+        res.json({
+            message: "Database connected successfully",
+            result: rows[0].result,
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Database connection failed",
+        });
+    }
 });
 
 app.listen(PORT, () => {
