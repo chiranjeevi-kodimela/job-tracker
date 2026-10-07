@@ -1,13 +1,21 @@
 require("dotenv").config();
 
 const express = require("express");
-const db=require("./config/db");
 const app= express();
+const db=require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const PORT = process.env.PORT || 5000;;
 const userRoutes = require("./routes/userRoutes");
 const companyRoutes = require("./routes/companyRoutes");
 const applicationRoutes=require("./routes/applicationRoutes");
+const interviewRoutes=require("./routes/interviewRoutes");
+
+app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log("BODY:", req.body);
+  next();
+});
 
 app.get("/", (req,res) => {
     res.json({ 
@@ -35,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/applications", applicationRoutes);
+app.use("/api/interviews", interviewRoutes);
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });

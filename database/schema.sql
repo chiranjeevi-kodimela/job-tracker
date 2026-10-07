@@ -51,3 +51,22 @@ CREATE TABLE applications (
         REFERENCES companies(id)
         ON DELETE CASCADE
 );
+
+create table interviews (
+    id int auto_increment primary key,
+    user_id int not null,
+    application_id int not null,
+
+    interview_type varchar(100) not null,
+    interview_date date not null,
+    interview_time time,
+    meeting_link varchar(500),
+    interviewer varchar(500),
+    notes text,
+
+    created_at timestamp default current_timestamp,
+    updated_at timestamp default current_timestamp on update current_timestamp,
+
+    foreign key (user_id) references users(id) on delete cascade,
+    foreign key (application_id) references applications(id) on delete cascade
+);
