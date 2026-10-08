@@ -1,36 +1,36 @@
-const db =require("../config/db");
+const db = require("../config/db");
 
-const createApplication = async (req,res) => {
-    try {
-        const {
-            company_id,
-            job_title,
-            job_url,
-            status,
-            applied_date,
-            job_description,
-            notes,
-        } = req.body;
+const createApplication = async (req, res) => {
+  try {
+    const {
+      company_id,
+      job_title,
+      job_url,
+      status,
+      applied_date,
+      job_description,
+      notes,
+    } = req.body;
 
-        if(!company_id || !job_title) {
-            return res.status(400).json({
-                message: "company and job title are required",
-            });
-        }
+    if (!company_id || !job_title) {
+      return res.status(400).json({
+        message: "company and job title are required",
+      });
+    }
 
-        const [companies] =await db.query (
-            ` select id from companies where id =? and user_id =?`,
-            [company_id, req.user.userId]
-        );
+    const [companies] = await db.query(
+      ` select id from companies where id =? and user_id =?`,
+      [company_id, req.user.userId],
+    );
 
-        if(companies.length === 0) {
-            return res.status(404).json({
-                message: "comapny not found",
-            });
-        }
+    if (companies.length === 0) {
+      return res.status(404).json({
+        message: "comapny not found",
+      });
+    }
 
-        const [result] =await db.query (
-            `insert into applications(
+    const [result] = await db.query(
+      `insert into applications(
                 user_id,
                 company_id,
                 job_title,
@@ -40,35 +40,35 @@ const createApplication = async (req,res) => {
                 job_description,
                 notes
                 ) values (?,?,?,?,?,?,?,?)`,
-            [
-                req.user.userId,
-                company_id,
-                job_title,
-                job_url || null,
-                status || "applied",
-                applied_date || null,
-                job_description || null,
-                notes || null,
-            ]     
-        );
+      [
+        req.user.userId,
+        company_id,
+        job_title,
+        job_url || null,
+        status || "applied",
+        applied_date || null,
+        job_description || null,
+        notes || null,
+      ],
+    );
 
-        res.status(201).json({
-            message: "application created successfully",
-            applicationId: result.insertId,
-        });
-    } catch(error) {
-        console.error(error);
+    res.status(201).json({
+      message: "application created successfully",
+      applicationId: result.insertId,
+    });
+  } catch (error) {
+    console.error(error);
 
-        res.status(500).json({
-            message: "server error",
-        });
-    }
+    res.status(500).json({
+      message: "server error",
+    });
+  }
 };
 
-const getApplications = async (req,res) => {
-    try {
-        const [applications] = await db.query(
-            `select
+const getApplications = async (req, res) => {
+  try {
+    const [applications] = await db.query(
+      `select
             a.id,
             a.company_id,
             c.name as company_name,
@@ -85,26 +85,26 @@ const getApplications = async (req,res) => {
                 on a.company_id = c.id
             where a.user_id = ?
             order by a.created_at desc`,
-            [req.user.userId]
-        );
+      [req.user.userId],
+    );
 
-        res.json({
-            applications,
-        });
-    } catch(error) {
-        console.error(error);
+    res.json({
+      applications,
+    });
+  } catch (error) {
+    console.error(error);
 
-        res.status(500).json({
-            message: "server error",
-        });
-    }
+    res.status(500).json({
+      message: "server error",
+    });
+  }
 };
 
-const getApplicationById=async(req,res) => {
-    try {
-        const {id} = req.params;
-        const [applications] = await db.query(
-        `SELECT
+const getApplicationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const [applications] = await db.query(
+      `SELECT
          a.id,
          a.company_id,
          c.name AS company_name,
@@ -120,25 +120,25 @@ const getApplicationById=async(req,res) => {
         INNER JOIN companies c
          ON a.company_id = c.id
         WHERE a.id = ? AND a.user_id = ?`,
-        [id, req.user.userId]
-        );
+      [id, req.user.userId],
+    );
 
-        if (applications.length === 0) {
-            return res.status(404).json({
-                message: "application not found",
-            });
-        }
-
-        res.json({
-            applications: applications[0],
-        });
-    } catch(error) {
-        console.error(error);
-
-        res.status(500).json({
-            message: "server error",
-        });
+    if (applications.length === 0) {
+      return res.status(404).json({
+        message: "application not found",
+      });
     }
+
+    res.json({
+      applications: applications[0],
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "server error",
+    });
+  }
 };
 
 const updateApplication = async (req, res) => {
@@ -165,7 +165,7 @@ const updateApplication = async (req, res) => {
       `SELECT id
        FROM companies
        WHERE id = ? AND user_id = ?`,
-      [company_id, req.user.userId]
+      [company_id, req.user.userId],
     );
 
     if (companies.length === 0) {
@@ -195,7 +195,7 @@ const updateApplication = async (req, res) => {
         notes || null,
         id,
         req.user.userId,
-      ]
+      ],
     );
 
     if (result.affectedRows === 0) {
@@ -223,7 +223,7 @@ const deleteApplication = async (req, res) => {
     const [result] = await db.query(
       `DELETE FROM applications
        WHERE id = ? AND user_id = ?`,
-      [id, req.user.userId]
+      [id, req.user.userId],
     );
 
     if (result.affectedRows === 0) {
@@ -243,10 +243,10 @@ const deleteApplication = async (req, res) => {
     });
   }
 };
-module.exports={
-    createApplication,
-    getApplications,
-    getApplicationById,
-    updateApplication,
-    deleteApplication,
+module.exports = {
+  createApplication,
+  getApplications,
+  getApplicationById,
+  updateApplication,
+  deleteApplication,
 };

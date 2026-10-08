@@ -8,7 +8,7 @@ router.get("/me", authMiddleware, async (req, res) => {
   try {
     const [users] = await db.query(
       "SELECT id, name, email, created_at FROM users WHERE id = ?",
-      [req.user.userId]
+      [req.user.userId],
     );
 
     if (users.length === 0) {
