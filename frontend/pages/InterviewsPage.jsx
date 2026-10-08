@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 
+import {
+  getInterviews,
+  getApplications,
+  createInterview,
+  updateInterview,
+  deleteInterview,
+} from "../src/services/api";
+
 function InterviewsPage() {
   const [interviews, setInterviews] = useState([]);
   const [applications, setApplications] = useState([]);
@@ -17,69 +25,33 @@ function InterviewsPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const fetchApplications = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setError("You are not logged in.");
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:5000/api/applications", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to fetch applications.");
-        return;
-      }
-
-      setApplications(data.applications);
-    } catch (error) {
-      console.error("Applications fetch error:", error);
-      setError("Unable to connect to the server.");
-    }
-  };
-
   const fetchInterviews = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setError("You are not logged in.");
-      return;
-    }
-
     try {
-      const response = await fetch("http://localhost:5000/api/interviews", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to fetch interviews.");
-        return;
-      }
+      const data = await getInterviews();
 
       setInterviews(data.interviews);
     } catch (error) {
       console.error("Interviews fetch error:", error);
-      setError("Unable to connect to the server.");
+      setError(error.message);
     }
   };
 
   useEffect(() => {
-    fetchApplications();
-    fetchInterviews();
+    const loadData = async () => {
+      try {
+        const applicationsData = await getApplications();
+        const interviewsData = await getInterviews();
+
+        setApplications(applicationsData.applications);
+        setInterviews(interviewsData.interviews);
+      } catch (error) {
+        console.error("Interviews page loading error:", error);
+
+        setError(error.message);
+      }
+    };
+
+    loadData();
   }, []);
 
   const handleSubmit = async (event) => {
@@ -103,8 +75,6 @@ function InterviewsPage() {
       return;
     }
 
-    const token = localStorage.getItem("token");
-
     const interviewData = {
       application_id: Number(applicationId),
       interview_type: interviewType,
@@ -117,24 +87,7 @@ function InterviewsPage() {
 
     try {
       if (editingInterviewId) {
-        const response = await fetch(
-          `http://localhost:5000/api/interviews/${editingInterviewId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(interviewData),
-          },
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.message || "Failed to update interview.");
-          return;
-        }
+        await updateInterview(editingInterviewId, interviewData);
 
         setMessage("Interview updated successfully.");
 
@@ -144,21 +97,7 @@ function InterviewsPage() {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/interviews", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(interviewData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to create interview.");
-        return;
-      }
+      await createInterview(interviewData);
 
       setMessage("Interview created successfully.");
 
@@ -166,7 +105,7 @@ function InterviewsPage() {
       fetchInterviews();
     } catch (error) {
       console.error("Interview operation error:", error);
-      setError("Unable to connect to the server.");
+      setError(error.message);
     }
   };
 
@@ -197,32 +136,15 @@ function InterviewsPage() {
     setError("");
     setMessage("");
 
-    const token = localStorage.getItem("token");
-
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/interviews/${interviewId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to delete interview.");
-        return;
-      }
+      await deleteInterview(interviewId);
 
       setMessage("Interview deleted successfully.");
 
       fetchInterviews();
     } catch (error) {
       console.error("Delete interview error:", error);
-      setError("Unable to connect to the server.");
+      setError(error.message);
     }
   };
 
@@ -258,8 +180,6 @@ function InterviewsPage() {
       <h2>{editingInterviewId ? "Edit Interview" : "Schedule Interview"}</h2>
 
       <form onSubmit={handleSubmit}>
-        {}
-
         <div>
           <label>Application</label>
           <br />
@@ -280,8 +200,6 @@ function InterviewsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Interview Type</label>
           <br />
@@ -291,24 +209,16 @@ function InterviewsPage() {
             onChange={(event) => setInterviewType(event.target.value)}
           >
             <option value="">Select Interview Type</option>
-
             <option value="HR Interview">HR Interview</option>
-
             <option value="Technical Interview">Technical Interview</option>
-
             <option value="Coding Round">Coding Round</option>
-
             <option value="Managerial Interview">Managerial Interview</option>
-
             <option value="System Design">System Design</option>
-
             <option value="Final Interview">Final Interview</option>
           </select>
         </div>
 
         <br />
-
-        {}
 
         <div>
           <label>Interview Date</label>
@@ -323,8 +233,6 @@ function InterviewsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Interview Time</label>
           <br />
@@ -337,8 +245,6 @@ function InterviewsPage() {
         </div>
 
         <br />
-
-        {}
 
         <div>
           <label>Meeting Link</label>
@@ -354,8 +260,6 @@ function InterviewsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Interviewer</label>
           <br />
@@ -370,8 +274,6 @@ function InterviewsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Notes</label>
           <br />
@@ -385,8 +287,6 @@ function InterviewsPage() {
         </div>
 
         <br />
-
-        {}
 
         <button type="submit">
           {editingInterviewId ? "Update Interview" : "Schedule Interview"}
@@ -403,8 +303,6 @@ function InterviewsPage() {
       </form>
 
       <hr />
-
-      {}
 
       <h2>My Interviews</h2>
 

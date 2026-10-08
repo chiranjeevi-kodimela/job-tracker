@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
 
+import {
+  getCompanies,
+  createCompany,
+  updateCompany,
+  deleteCompany,
+} from "../src/services/api";
+
 function CompaniesPage() {
   const [companies, setCompanies] = useState([]);
 
@@ -13,39 +20,32 @@ function CompaniesPage() {
   const [message, setMessage] = useState("");
 
   const fetchCompanies = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setError("You are not logged in.");
-      return;
-    }
-
     try {
-      const response = await fetch("http://localhost:5000/api/companies", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to fetch companies.");
-        return;
-      }
+      const data = await getCompanies();
 
       setCompanies(data.companies);
     } catch (error) {
       console.error("Companies fetch error:", error);
-      setError("Unable to connect to the server.");
+
+      setError(error.message);
     }
   };
 
   useEffect(() => {
-    fetchCompanies();
-  }, []);
+    const loadCompanies = async () => {
+      try {
+        const data = await getCompanies();
 
+        setCompanies(data.companies);
+      } catch (error) {
+        console.error("Companies fetch error:", error);
+
+        setError(error.message);
+      }
+    };
+
+    loadCompanies();
+  }, []);
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -57,98 +57,43 @@ function CompaniesPage() {
       return;
     }
 
-    const token = localStorage.getItem("token");
+    const companyData = {
+      name,
+      website,
+      location,
+    };
 
     try {
-      // UPDATE
       if (editingCompanyId) {
-        const response = await fetch(
-          `http://localhost:5000/api/companies/${editingCompanyId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              name,
-              website,
-              location,
-            }),
-          },
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.message || "Failed to update company.");
-          return;
-        }
+        await updateCompany(editingCompanyId, companyData);
 
         setMessage("Company updated successfully.");
 
-        setEditingCompanyId(null);
-        setName("");
-        setWebsite("");
-        setLocation("");
-
+        clearForm();
         fetchCompanies();
 
         return;
       }
 
-      // CREATE
-      const response = await fetch("http://localhost:5000/api/companies", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          name,
-          website,
-          location,
-        }),
-      });
-
-      const data = await response.json();
-
-      console.log("Create company response:", data);
-
-      if (!response.ok) {
-        setError(data.message || "Failed to create company.");
-        return;
-      }
+      await createCompany(companyData);
 
       setMessage("Company created successfully.");
 
-      setName("");
-      setWebsite("");
-      setLocation("");
-
+      clearForm();
       fetchCompanies();
     } catch (error) {
       console.error("Company operation error:", error);
-      setError("Unable to connect to the server.");
+
+      setError(error.message);
     }
   };
 
   const handleEdit = (company) => {
     setEditingCompanyId(company.id);
+
     setName(company.name);
     setWebsite(company.website || "");
     setLocation(company.location || "");
-
-    setError("");
-    setMessage("");
-  };
-
-  const handleCancelEdit = () => {
-    setEditingCompanyId(null);
-
-    setName("");
-    setWebsite("");
-    setLocation("");
 
     setError("");
     setMessage("");
@@ -166,33 +111,32 @@ function CompaniesPage() {
     setError("");
     setMessage("");
 
-    const token = localStorage.getItem("token");
-
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/companies/${companyId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to delete company.");
-        return;
-      }
+      await deleteCompany(companyId);
 
       setMessage("Company deleted successfully.");
 
       fetchCompanies();
     } catch (error) {
       console.error("Delete company error:", error);
-      setError("Unable to connect to the server.");
+
+      setError(error.message);
     }
+  };
+
+  const clearForm = () => {
+    setEditingCompanyId(null);
+
+    setName("");
+    setWebsite("");
+    setLocation("");
+  };
+
+  const handleCancelEdit = () => {
+    clearForm();
+
+    setError("");
+    setMessage("");
   };
 
   return (

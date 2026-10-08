@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Layout from "../components/Layout";
 import ProtectedRoute from "../components/protectedRoute";
-import ApplicationPage from "../pages/ApplicationPage";
+import ApplicationsPage from "../pages/ApplicationsPage";
 import CompaniesPage from "../pages/CompaniesPage";
 import DashboardPage from "../pages/DashboardPage";
 import InterviewsPage from "../pages/InterviewsPage";
@@ -15,7 +15,7 @@ function App() {
       <Routes>
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-            <Route path="/applications" element={<ApplicationPage />} />
+            <Route path="/applications" element={<ApplicationsPage />} />
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/interviews" element={<InterviewsPage />} />

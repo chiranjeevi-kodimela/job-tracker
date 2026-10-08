@@ -1,5 +1,13 @@
 import { useEffect, useState } from "react";
 
+import {
+  getApplications,
+  getCompanies,
+  createApplication,
+  updateApplication,
+  deleteApplication,
+} from "../src/services/api";
+
 function ApplicationsPage() {
   const [applications, setApplications] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -17,71 +25,33 @@ function ApplicationsPage() {
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const fetchCompanies = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setError("You are not logged in.");
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:5000/api/companies", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to fetch companies.");
-        return;
-      }
-
-      setCompanies(Array.isArray(data.companies) ? data.companies : []);
-    } catch (error) {
-      console.error("Companies fetch error:", error);
-      setError("Unable to connect to the server.");
-    }
-  };
-
   const fetchApplications = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setError("You are not logged in.");
-      return;
-    }
-
     try {
-      const response = await fetch("http://localhost:5000/api/applications", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const data = await getApplications();
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to fetch applications.");
-        return;
-      }
-
-      setApplications(
-        Array.isArray(data.applications) ? data.applications : [],
-      );
+      setApplications(data.applications);
     } catch (error) {
       console.error("Applications fetch error:", error);
-      setError("Unable to connect to the server.");
+      setError(error.message);
     }
   };
 
   useEffect(() => {
-    fetchCompanies();
-    fetchApplications();
+    const loadData = async () => {
+      try {
+        const applicationsData = await getApplications();
+        const companiesData = await getCompanies();
+
+        setApplications(applicationsData.applications);
+        setCompanies(companiesData.companies);
+      } catch (error) {
+        console.error("Applications page loading error:", error);
+
+        setError(error.message);
+      }
+    };
+
+    loadData();
   }, []);
 
   const handleSubmit = async (event) => {
@@ -100,8 +70,6 @@ function ApplicationsPage() {
       return;
     }
 
-    const token = localStorage.getItem("token");
-
     const applicationData = {
       company_id: Number(companyId),
       job_title: jobTitle,
@@ -114,24 +82,7 @@ function ApplicationsPage() {
 
     try {
       if (editingApplicationId) {
-        const response = await fetch(
-          `http://localhost:5000/api/applications/${editingApplicationId}`,
-          {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(applicationData),
-          },
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          setError(data.message || "Failed to update application.");
-          return;
-        }
+        await updateApplication(editingApplicationId, applicationData);
 
         setMessage("Application updated successfully.");
 
@@ -141,21 +92,7 @@ function ApplicationsPage() {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/applications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(applicationData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to create application.");
-        return;
-      }
+      await createApplication(applicationData);
 
       setMessage("Application created successfully.");
 
@@ -163,7 +100,7 @@ function ApplicationsPage() {
       fetchApplications();
     } catch (error) {
       console.error("Application operation error:", error);
-      setError("Unable to connect to the server.");
+      setError(error.message);
     }
   };
 
@@ -194,32 +131,15 @@ function ApplicationsPage() {
     setError("");
     setMessage("");
 
-    const token = localStorage.getItem("token");
-
     try {
-      const response = await fetch(
-        `http://localhost:5000/api/applications/${applicationId}`,
-        {
-          method: "DELETE",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setError(data.message || "Failed to delete application.");
-        return;
-      }
+      await deleteApplication(applicationId);
 
       setMessage("Application deleted successfully.");
 
       fetchApplications();
     } catch (error) {
       console.error("Delete application error:", error);
-      setError("Unable to connect to the server.");
+      setError(error.message);
     }
   };
 
@@ -255,8 +175,6 @@ function ApplicationsPage() {
       <h2>{editingApplicationId ? "Edit Application" : "Add Application"}</h2>
 
       <form onSubmit={handleSubmit}>
-        {}
-
         <div>
           <label>Company</label>
           <br />
@@ -277,8 +195,6 @@ function ApplicationsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Job Title</label>
           <br />
@@ -293,8 +209,6 @@ function ApplicationsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Job URL</label>
           <br />
@@ -308,8 +222,6 @@ function ApplicationsPage() {
         </div>
 
         <br />
-
-        {}
 
         <div>
           <label>Status</label>
@@ -329,8 +241,6 @@ function ApplicationsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Applied Date</label>
           <br />
@@ -343,8 +253,6 @@ function ApplicationsPage() {
         </div>
 
         <br />
-
-        {}
 
         <div>
           <label>Job Description</label>
@@ -360,8 +268,6 @@ function ApplicationsPage() {
 
         <br />
 
-        {}
-
         <div>
           <label>Notes</label>
           <br />
@@ -376,13 +282,9 @@ function ApplicationsPage() {
 
         <br />
 
-        {}
-
         <button type="submit">
           {editingApplicationId ? "Update Application" : "Add Application"}
         </button>
-
-        {}
 
         {editingApplicationId && (
           <>
@@ -395,8 +297,6 @@ function ApplicationsPage() {
       </form>
 
       <hr />
-
-      {}
 
       <h2>My Applications</h2>
 
