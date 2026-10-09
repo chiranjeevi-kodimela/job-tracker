@@ -5,7 +5,7 @@ import {
   getApplications,
   getInterviews,
   getCompanies,
-} from "../src/services/api";
+} from "../services/api";
 
 function DashboardPage() {
   const [user, setUser] = useState(null);

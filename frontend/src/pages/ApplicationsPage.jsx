@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import {Link}from "react-router-dom";
 
 import {
   getApplications,
@@ -6,7 +7,7 @@ import {
   createApplication,
   updateApplication,
   deleteApplication,
-} from "../src/services/api";
+} from "../services/api";
 
 function ApplicationsPage() {
   const [applications, setApplications] = useState([]);
@@ -394,6 +395,7 @@ function ApplicationsPage() {
           </p>
           <button onClick={() => handleEdit(application)}>Edit</button>{" "}
           <button onClick={() => handleDelete(application.id)}>Delete</button>
+          <Link to={`/applications/${application.id}`}>View Details</Link>
           <hr />
         </div>
       ))}

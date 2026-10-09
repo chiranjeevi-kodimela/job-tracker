@@ -5,7 +5,7 @@ import {
   createCompany,
   updateCompany,
   deleteCompany,
-} from "../src/services/api";
+} from "../services/api";
 
 function CompaniesPage() {
   const [companies, setCompanies] = useState([]);

@@ -2,12 +2,13 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Layout from "../components/Layout";
 import ProtectedRoute from "../components/protectedRoute";
-import ApplicationsPage from "../pages/ApplicationsPage";
-import CompaniesPage from "../pages/CompaniesPage";
-import DashboardPage from "../pages/DashboardPage";
-import InterviewsPage from "../pages/InterviewsPage";
-import LoginPage from "../pages/LoginPage";
-import RegisterPage from "../pages/RegisterPage";
+import ApplicationsPage from "./pages/ApplicationsPage";
+import CompaniesPage from "./pages/CompaniesPage";
+import DashboardPage from "./pages/DashboardPage";
+import InterviewsPage from "./pages/InterviewsPage";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import ApplicationDetailsPage from "./pages/ApplicationDetailsPage";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/companies" element={<CompaniesPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/interviews" element={<InterviewsPage />} />
+            <Route path="/applications/:id" element={<ApplicationDetailsPage/>} />
           </Route>
         </Route>
 

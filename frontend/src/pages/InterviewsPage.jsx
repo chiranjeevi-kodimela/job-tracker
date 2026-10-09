@@ -6,7 +6,7 @@ import {
   createInterview,
   updateInterview,
   deleteInterview,
-} from "../src/services/api";
+} from "../services/api";
 
 function InterviewsPage() {
   const [interviews, setInterviews] = useState([]);

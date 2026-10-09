@@ -76,6 +76,10 @@ export const getApplications = () => {
   return apiRequest("/applications");
 };
 
+export async function getApplicationById(id) {
+  return apiRequest(`/applications/${id}`);
+}
+
 export const createApplication = (applicationData) => {
   return apiRequest("/applications", {
     method: "POST",
