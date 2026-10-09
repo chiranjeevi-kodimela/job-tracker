@@ -20,6 +20,9 @@ function ApplicationsPage() {
   const [jobDescription, setJobDescription] = useState("");
   const [notes, setNotes] = useState("");
 
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("newest");
   const [editingApplicationId, setEditingApplicationId] = useState(null);
 
   const [error, setError] = useState("");
@@ -53,6 +56,39 @@ function ApplicationsPage() {
 
     loadData();
   }, []);
+
+  const filteredApplications = applications
+    .filter((application) => {
+      const search = searchTerm.toLowerCase().trim();
+
+      const matchesSearch =
+        application.job_title.toLowerCase().includes(search) ||
+        application.company_name.toLowerCase().includes(search);
+
+      const matchesStatus =
+        statusFilter === "All" || application.status === statusFilter;
+
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      if (sortBy === "newest") {
+        return new Date(b.created_at) - new Date(a.created_at);
+      }
+
+      if (sortBy === "oldest") {
+        return new Date(a.created_at) - new Date(b.created_at);
+      }
+
+      if (sortBy === "jobTitle") {
+        return a.job_title.localeCompare(b.job_title);
+      }
+
+      if (sortBy === "company") {
+        return a.company_name.localeCompare(b.company_name);
+      }
+
+      return 0;
+    });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -300,9 +336,40 @@ function ApplicationsPage() {
 
       <h2>My Applications</h2>
 
-      {applications.length === 0 && <p>No applications found.</p>}
+      <div>
+        <input
+          type="text"
+          placeholder="Search by job title or company"
+          value={searchTerm}
+          onChange={(event) => setSearchTerm(event.target.value)}
+        />
 
-      {applications.map((application) => (
+        <select
+          value={statusFilter}
+          onChange={(event) => setStatusFilter(event.target.value)}
+        >
+          <option value="All">All Statuses</option>
+          <option value="Applied">Applied</option>
+          <option value="Assessment">Assessment</option>
+          <option value="Interview">Interview</option>
+          <option value="Selected">Selected</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+
+        <select
+          value={sortBy}
+          onChange={(event) => setSortBy(event.target.value)}
+        >
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="jobTitle">Job Title (A–Z)</option>
+          <option value="company">Company (A–Z)</option>
+        </select>
+      </div>
+
+      {filteredApplications.length === 0 && <p>No applications found.</p>}
+
+      {filteredApplications.map((application) => (
         <div key={application.id}>
           <h3>{application.job_title}</h3>
           <p>
