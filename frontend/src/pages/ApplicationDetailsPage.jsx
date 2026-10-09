@@ -39,7 +39,7 @@ function ApplicationDetailsPage() {
 
             <p>Company: {application.company_name}</p>
             <p>Status: {application.status}</p>
-            <p>Application Date: {application.application_date || "Not provided"}</p>
+            <p>Application Date: {application.applied_date || "Not provided"}</p>
             <p>Job URL: {application.job_url || "Not provided"}</p>
             <p>Description: {application.job_description || "Not provided"}</p>
             <p>note: {application.notes || "Not provided"}</p>

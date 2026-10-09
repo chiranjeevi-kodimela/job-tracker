@@ -130,7 +130,7 @@ const getApplicationById = async (req, res) => {
     }
 
     res.json({
-      applications: applications[0],
+      application: applications[0],
     });
   } catch (error) {
     console.error(error);
