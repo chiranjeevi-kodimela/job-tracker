@@ -52,3 +52,12 @@ create table interviews (
     foreign key (user_id) references users(id) on delete cascade,
     foreign key (application_id) references applications(id) on delete cascade
 );
+CREATE TABLE password_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_password_resets_token_hash (token_hash),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

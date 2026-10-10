@@ -23,7 +23,7 @@ const createInterview = async (req, res) => {
       [application_id, req.user.userId],
     );
 
-    if (applications.lemgth === 0) {
+    if (applications.length === 0) {
       return res.status(404).json({
         message: "Application not found",
       });

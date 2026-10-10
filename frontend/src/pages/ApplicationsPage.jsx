@@ -1,159 +1,132 @@
-import { useEffect, useState } from "react";
-import {Link}from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 
+import Alert from "../components/Alert";
+import ApplicationForm from "../components/ApplicationForm";
+import EmptyState from "../components/EmptyState";
+import Loading from "../components/Loading";
+import PageHeader from "../components/PageHeader";
+import Pagination from "../components/Pagination";
+import StatusBadge from "../components/StatusBadge";
+import { APPLICATION_STATUSES } from "../constants";
 import {
+  createApplication,
+  deleteApplication,
   getApplications,
   getCompanies,
-  createApplication,
   updateApplication,
-  deleteApplication,
 } from "../services/api";
+import {
+  APPLICATION_CSV_COLUMNS,
+  filterAndSortApplications,
+  paginate,
+} from "../utils/applications";
+import { buildCsv, downloadCsv } from "../utils/csv";
+import { formatDate } from "../utils/dates";
 
 function ApplicationsPage() {
   const [applications, setApplications] = useState([]);
   const [companies, setCompanies] = useState([]);
-
-  const [companyId, setCompanyId] = useState("");
-  const [jobTitle, setJobTitle] = useState("");
-  const [jobUrl, setJobUrl] = useState("");
-  const [status, setStatus] = useState("Applied");
-  const [appliedDate, setAppliedDate] = useState("");
-  const [jobDescription, setJobDescription] = useState("");
-  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortBy, setSortBy] = useState("newest");
-  const [editingApplicationId, setEditingApplicationId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(5);
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+
+  // The details page links here with ?edit=<id>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const editParam = searchParams.get("edit");
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const fetchApplications = async () => {
-    try {
-      const data = await getApplications();
-
-      setApplications(data.applications);
-    } catch (error) {
-      console.error("Applications fetch error:", error);
-      setError(error.message);
-    }
-  };
+  const fetchApplications = useCallback(async () => {
+    const data = await getApplications();
+    setApplications(data.applications);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const applicationsData = await getApplications();
-        const companiesData = await getCompanies();
+        const [applicationsData, companiesData] = await Promise.all([
+          getApplications(),
+          getCompanies(),
+        ]);
 
         setApplications(applicationsData.applications);
         setCompanies(companiesData.companies);
-      } catch (error) {
-        console.error("Applications page loading error:", error);
-
-        setError(error.message);
+      } catch (loadError) {
+        setError(loadError.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadData();
   }, []);
 
-  const filteredApplications = applications
-    .filter((application) => {
-      const search = searchTerm.toLowerCase().trim();
+  const activeEditId = editingId ?? editParam;
+  const editingApplication = activeEditId
+    ? applications.find(
+        (application) => String(application.id) === String(activeEditId),
+      )
+    : null;
+  const formOpen = showForm || Boolean(editingApplication);
 
-      const matchesSearch =
-        application.job_title.toLowerCase().includes(search) ||
-        application.company_name.toLowerCase().includes(search);
+  const filteredApplications = filterAndSortApplications(applications, {
+    searchTerm,
+    statusFilter,
+    sortBy,
+  });
 
-      const matchesStatus =
-        statusFilter === "All" || application.status === statusFilter;
+  const {
+    page,
+    totalPages,
+    startIndex,
+    items: paginatedApplications,
+  } = paginate(filteredApplications, currentPage, pageSize);
 
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      if (sortBy === "newest") {
-        return new Date(b.created_at) - new Date(a.created_at);
-      }
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingId(null);
+    if (editParam) setSearchParams({}, { replace: true });
+  };
 
-      if (sortBy === "oldest") {
-        return new Date(a.created_at) - new Date(b.created_at);
-      }
-
-      if (sortBy === "jobTitle") {
-        return a.job_title.localeCompare(b.job_title);
-      }
-
-      if (sortBy === "company") {
-        return a.company_name.localeCompare(b.company_name);
-      }
-
-      return 0;
-    });
-
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-
+  const openAddForm = () => {
+    setEditingId(null);
+    setShowForm(true);
     setError("");
     setMessage("");
-
-    if (!companyId) {
-      setError("Please select a company.");
-      return;
-    }
-
-    if (!jobTitle.trim()) {
-      setError("Job title is required.");
-      return;
-    }
-
-    const applicationData = {
-      company_id: Number(companyId),
-      job_title: jobTitle,
-      job_url: jobUrl,
-      status: status,
-      applied_date: appliedDate || null,
-      job_description: jobDescription,
-      notes: notes,
-    };
-
-    try {
-      if (editingApplicationId) {
-        await updateApplication(editingApplicationId, applicationData);
-
-        setMessage("Application updated successfully.");
-
-        clearForm();
-        fetchApplications();
-
-        return;
-      }
-
-      await createApplication(applicationData);
-
-      setMessage("Application created successfully.");
-
-      clearForm();
-      fetchApplications();
-    } catch (error) {
-      console.error("Application operation error:", error);
-      setError(error.message);
-    }
+    if (editParam) setSearchParams({}, { replace: true });
   };
 
   const handleEdit = (application) => {
-    setEditingApplicationId(application.id);
-
-    setCompanyId(String(application.company_id));
-    setJobTitle(application.job_title);
-    setJobUrl(application.job_url || "");
-    setStatus(application.status);
-    setAppliedDate(application.applied_date || "");
-    setJobDescription(application.job_description || "");
-    setNotes(application.notes || "");
-
+    setEditingId(application.id);
+    setShowForm(true);
     setError("");
     setMessage("");
+  };
+
+  const handleFormSubmit = async (applicationData) => {
+    setError("");
+    setMessage("");
+
+    if (editingApplication) {
+      await updateApplication(editingApplication.id, applicationData);
+      setMessage("Application updated successfully.");
+    } else {
+      await createApplication(applicationData);
+      setMessage("Application created successfully.");
+      setCurrentPage(1);
+    }
+
+    await fetchApplications();
+    closeForm();
   };
 
   const handleDelete = async (applicationId) => {
@@ -161,245 +134,202 @@ function ApplicationsPage() {
       "Are you sure you want to delete this application?",
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setError("");
     setMessage("");
 
     try {
       await deleteApplication(applicationId);
-
       setMessage("Application deleted successfully.");
-
-      fetchApplications();
-    } catch (error) {
-      console.error("Delete application error:", error);
-      setError(error.message);
+      await fetchApplications();
+    } catch (deleteError) {
+      setError(deleteError.message);
     }
   };
 
-  const clearForm = () => {
-    setEditingApplicationId(null);
+  const handleExportCSV = () => {
+    if (filteredApplications.length === 0) {
+      setError("There are no applications to export.");
+      setMessage("");
+      return;
+    }
 
-    setCompanyId("");
-    setJobTitle("");
-    setJobUrl("");
-    setStatus("Applied");
-    setAppliedDate("");
-    setJobDescription("");
-    setNotes("");
-  };
-
-  const handleCancelEdit = () => {
-    clearForm();
+    downloadCsv(
+      "job-applications.csv",
+      buildCsv(filteredApplications, APPLICATION_CSV_COLUMNS),
+    );
 
     setError("");
-    setMessage("");
+    setMessage(
+      `Exported ${filteredApplications.length} application(s) to CSV.`,
+    );
   };
 
+  // Resets to page 1 whenever a filter changes
+  const onFilter =
+    (setter, transform = (value) => value) =>
+    (event) => {
+      setter(transform(event.target.value));
+      setCurrentPage(1);
+    };
+
+  if (loading) return <Loading label="Loading applications..." />;
+
   return (
-    <div>
-      <h1>Applications</h1>
-
-      {error && <p>{error}</p>}
-
-      {message && <p>{message}</p>}
-
-      <hr />
-
-      <h2>{editingApplicationId ? "Edit Application" : "Add Application"}</h2>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Company</label>
-          <br />
-
-          <select
-            value={companyId}
-            onChange={(event) => setCompanyId(event.target.value)}
-          >
-            <option value="">Select Company</option>
-
-            {companies.map((company) => (
-              <option key={company.id} value={company.id}>
-                {company.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <br />
-
-        <div>
-          <label>Job Title</label>
-          <br />
-
-          <input
-            type="text"
-            placeholder="Software Engineer"
-            value={jobTitle}
-            onChange={(event) => setJobTitle(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Job URL</label>
-          <br />
-
-          <input
-            type="text"
-            placeholder="https://example.com/job"
-            value={jobUrl}
-            onChange={(event) => setJobUrl(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Status</label>
-          <br />
-
-          <select
-            value={status}
-            onChange={(event) => setStatus(event.target.value)}
-          >
-            <option value="Applied">Applied</option>
-            <option value="Assessment">Assessment</option>
-            <option value="Interview">Interview</option>
-            <option value="Selected">Selected</option>
-            <option value="Rejected">Rejected</option>
-          </select>
-        </div>
-
-        <br />
-
-        <div>
-          <label>Applied Date</label>
-          <br />
-
-          <input
-            type="date"
-            value={appliedDate}
-            onChange={(event) => setAppliedDate(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Job Description</label>
-          <br />
-
-          <textarea
-            placeholder="Enter job description"
-            value={jobDescription}
-            onChange={(event) => setJobDescription(event.target.value)}
-            rows="5"
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Notes</label>
-          <br />
-
-          <textarea
-            placeholder="Enter notes"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            rows="4"
-          />
-        </div>
-
-        <br />
-
-        <button type="submit">
-          {editingApplicationId ? "Update Application" : "Add Application"}
+    <>
+      <PageHeader
+        title="Applications"
+        subtitle={`${applications.length} total`}
+      >
+        <button
+          type="button"
+          className="btn btn-outline"
+          onClick={handleExportCSV}
+        >
+          Export to CSV
         </button>
+        <button type="button" className="btn btn-primary" onClick={openAddForm}>
+          + Add Application
+        </button>
+      </PageHeader>
 
-        {editingApplicationId && (
-          <>
-            {" "}
-            <button type="button" onClick={handleCancelEdit}>
-              Cancel
-            </button>
-          </>
-        )}
-      </form>
+      <Alert>{error}</Alert>
+      <Alert type="success">{message}</Alert>
 
-      <hr />
+      {formOpen && (
+        <ApplicationForm
+          key={editingApplication?.id ?? "new"}
+          companies={companies}
+          application={editingApplication}
+          onSubmit={handleFormSubmit}
+          onCancel={closeForm}
+        />
+      )}
 
-      <h2>My Applications</h2>
-
-      <div>
+      <div className="card toolbar">
         <input
-          type="text"
+          type="search"
+          aria-label="Search applications"
           placeholder="Search by job title or company"
           value={searchTerm}
-          onChange={(event) => setSearchTerm(event.target.value)}
+          onChange={onFilter(setSearchTerm)}
         />
 
         <select
+          aria-label="Filter by status"
           value={statusFilter}
-          onChange={(event) => setStatusFilter(event.target.value)}
+          onChange={onFilter(setStatusFilter)}
         >
           <option value="All">All Statuses</option>
-          <option value="Applied">Applied</option>
-          <option value="Assessment">Assessment</option>
-          <option value="Interview">Interview</option>
-          <option value="Selected">Selected</option>
-          <option value="Rejected">Rejected</option>
+          {APPLICATION_STATUSES.map((status) => (
+            <option key={status} value={status}>
+              {status}
+            </option>
+          ))}
         </select>
 
         <select
+          aria-label="Sort by"
           value={sortBy}
-          onChange={(event) => setSortBy(event.target.value)}
+          onChange={onFilter(setSortBy)}
         >
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
           <option value="jobTitle">Job Title (A–Z)</option>
           <option value="company">Company (A–Z)</option>
         </select>
+
+        <select
+          aria-label="Applications per page"
+          value={pageSize}
+          onChange={onFilter(setPageSize, Number)}
+        >
+          <option value={5}>5 per page</option>
+          <option value={10}>10 per page</option>
+          <option value={20}>20 per page</option>
+        </select>
       </div>
 
-      {filteredApplications.length === 0 && <p>No applications found.</p>}
-
-      {filteredApplications.map((application) => (
-        <div key={application.id}>
-          <h3>{application.job_title}</h3>
-          <p>
-            <strong>Company:</strong> {application.company_name}
-          </p>
-          <p>
-            <strong>Status:</strong> {application.status}
-          </p>
-          <p>
-            <strong>Applied Date:</strong>{" "}
-            {application.applied_date || "Not provided"}
-          </p>
-          <p>
-            <strong>Job URL:</strong> {application.job_url || "Not provided"}
-          </p>
-          <p>
-            <strong>Job Description:</strong>{" "}
-            {application.job_description || "Not provided"}
-          </p>
-          <p>
-            <strong>Notes:</strong> {application.notes || "Not provided"}
-          </p>
-          <button onClick={() => handleEdit(application)}>Edit</button>{" "}
-          <button onClick={() => handleDelete(application.id)}>Delete</button>
-          <Link to={`/applications/${application.id}`}>View Details</Link>
-          <hr />
+      {filteredApplications.length === 0 ? (
+        <div className="card">
+          <EmptyState title="No applications found">
+            {applications.length === 0
+              ? "Add your first application to get started."
+              : "Try a different search or filter."}
+          </EmptyState>
         </div>
-      ))}
-    </div>
+      ) : (
+        <div className="card table-card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Job Title</th>
+                  <th>Company</th>
+                  <th>Status</th>
+                  <th>Applied</th>
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedApplications.map((application) => (
+                  <tr key={application.id}>
+                    <td>
+                      <Link to={`/applications/${application.id}`}>
+                        <strong>{application.job_title}</strong>
+                      </Link>
+                    </td>
+                    <td>{application.company_name}</td>
+                    <td>
+                      <StatusBadge status={application.status} />
+                    </td>
+                    <td>{formatDate(application.applied_date, "—")}</td>
+                    <td className="row-actions">
+                      <Link to={`/applications/${application.id}`}>
+                        View Details
+                      </Link>
+                      <button
+                        type="button"
+                        className="link-button"
+                        onClick={() => handleEdit(application)}
+                        aria-label={`Edit ${application.job_title}`}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="link-danger"
+                        onClick={() => handleDelete(application.id)}
+                        aria-label={`Delete ${application.job_title}`}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="table-footer">
+            <p className="muted">
+              Showing {startIndex + 1}–
+              {Math.min(startIndex + pageSize, filteredApplications.length)} of{" "}
+              {filteredApplications.length} applications
+            </p>
+
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

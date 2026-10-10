@@ -45,7 +45,7 @@ const createApplication = async (req, res) => {
         company_id,
         job_title,
         job_url || null,
-        status || "applied",
+        status || "Applied",
         applied_date || null,
         job_description || null,
         notes || null,

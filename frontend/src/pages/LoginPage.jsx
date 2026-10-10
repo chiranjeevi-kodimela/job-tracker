@@ -1,17 +1,28 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+
+import Alert from "../components/Alert";
+import AuthLayout from "../components/AuthLayout";
+import Field from "../components/Field";
+import { useAuth } from "../context/useAuth";
+import { loginUser } from "../services/api";
 
 function LoginPage() {
+  const { isAuthenticated, login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const navigate = useNavigate();
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     setError("");
 
     if (!email || !password) {
@@ -19,79 +30,63 @@ function LoginPage() {
       return;
     }
 
-    const loginData = {
-      email,
-      password,
-    };
-
+    setSubmitting(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(loginData),
-      });
-
-      const data = await response.json();
-
-      console.log("Login response:", data);
-
-      if (!response.ok) {
-        setError(data.message || "Login failed.");
-        return;
-      }
-
-      console.log("Login successful");
-      localStorage.setItem("token", data.token);
-      console.log("Token stored successfully");
-      navigate("/dashboard");
-    } catch (error) {
-      console.error("Login error:", error);
-      setError("Unable to connect to the server.");
+      const data = await loginUser({ email, password });
+      login(data.token, data.user);
+      navigate(location.state?.from || "/dashboard", { replace: true });
+    } catch (loginError) {
+      setError(loginError.message || "Login failed.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div>
-      <h1>Login</h1>
+    <AuthLayout
+      title="Welcome back"
+      subtitle="Log in to track your applications."
+      footer={
+        <>
+          Don't have an account? <Link to="/register">Register here</Link>
+        </>
+      }
+    >
+      <Alert type="success">{location.state?.message}</Alert>
+      <Alert>{error}</Alert>
 
-      {error && <p>{error}</p>}
+      <form className="form" onSubmit={handleSubmit} noValidate>
+        <Field
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <br />
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
+        <Field
+          label="Password"
+          type="password"
+          placeholder="Enter your password"
+          autoComplete="current-password"
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+
+        <div className="auth-row">
+          <Link to="/forgot-password">Forgot password?</Link>
         </div>
 
-        <br />
-
-        <div>
-          <label>Password</label>
-          <br />
-          <input
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <button type="submit">Login</button>
+        <button
+          type="submit"
+          className="btn btn-primary btn-block"
+          disabled={submitting}
+        >
+          {submitting ? "Logging in..." : "Login"}
+        </button>
       </form>
-
-      <p>
-        Don't have an account? <Link to="/register">Register here</Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 }
 

@@ -1,228 +1,176 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import Alert from "../components/Alert";
+import CompanyForm from "../components/CompanyForm";
+import EmptyState from "../components/EmptyState";
+import Loading from "../components/Loading";
+import PageHeader from "../components/PageHeader";
 import {
-  getCompanies,
   createCompany,
-  updateCompany,
   deleteCompany,
+  getCompanies,
+  updateCompany,
 } from "../services/api";
+import { getSafeUrl } from "../utils/url";
 
 function CompaniesPage() {
   const [companies, setCompanies] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [name, setName] = useState("");
-  const [website, setWebsite] = useState("");
-  const [location, setLocation] = useState("");
-
-  const [editingCompanyId, setEditingCompanyId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingCompany, setEditingCompany] = useState(null);
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const fetchCompanies = async () => {
-    try {
-      const data = await getCompanies();
-
-      setCompanies(data.companies);
-    } catch (error) {
-      console.error("Companies fetch error:", error);
-
-      setError(error.message);
-    }
-  };
+  const fetchCompanies = useCallback(async () => {
+    const data = await getCompanies();
+    setCompanies(data.companies);
+  }, []);
 
   useEffect(() => {
     const loadCompanies = async () => {
       try {
-        const data = await getCompanies();
-
-        setCompanies(data.companies);
-      } catch (error) {
-        console.error("Companies fetch error:", error);
-
-        setError(error.message);
+        await fetchCompanies();
+      } catch (loadError) {
+        setError(loadError.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadCompanies();
-  }, []);
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  }, [fetchCompanies]);
 
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingCompany(null);
+  };
+
+  const openAddForm = () => {
+    setEditingCompany(null);
+    setShowForm(true);
     setError("");
     setMessage("");
-
-    if (!name.trim()) {
-      setError("Company name is required.");
-      return;
-    }
-
-    const companyData = {
-      name,
-      website,
-      location,
-    };
-
-    try {
-      if (editingCompanyId) {
-        await updateCompany(editingCompanyId, companyData);
-
-        setMessage("Company updated successfully.");
-
-        clearForm();
-        fetchCompanies();
-
-        return;
-      }
-
-      await createCompany(companyData);
-
-      setMessage("Company created successfully.");
-
-      clearForm();
-      fetchCompanies();
-    } catch (error) {
-      console.error("Company operation error:", error);
-
-      setError(error.message);
-    }
   };
 
   const handleEdit = (company) => {
-    setEditingCompanyId(company.id);
-
-    setName(company.name);
-    setWebsite(company.website || "");
-    setLocation(company.location || "");
-
+    setEditingCompany(company);
+    setShowForm(true);
     setError("");
     setMessage("");
   };
 
-  const handleDelete = async (companyId) => {
+  const handleFormSubmit = async (companyData) => {
+    setError("");
+    setMessage("");
+
+    if (editingCompany) {
+      await updateCompany(editingCompany.id, companyData);
+      setMessage("Company updated successfully.");
+    } else {
+      await createCompany(companyData);
+      setMessage("Company created successfully.");
+    }
+
+    await fetchCompanies();
+    closeForm();
+  };
+
+  const handleDelete = async (company) => {
     const confirmed = window.confirm(
-      "Are you sure you want to delete this company?",
+      `Delete ${company.name}? Its applications and interviews will be deleted too.`,
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setError("");
     setMessage("");
 
     try {
-      await deleteCompany(companyId);
-
+      await deleteCompany(company.id);
       setMessage("Company deleted successfully.");
-
-      fetchCompanies();
-    } catch (error) {
-      console.error("Delete company error:", error);
-
-      setError(error.message);
+      await fetchCompanies();
+    } catch (deleteError) {
+      setError(deleteError.message);
     }
   };
 
-  const clearForm = () => {
-    setEditingCompanyId(null);
-
-    setName("");
-    setWebsite("");
-    setLocation("");
-  };
-
-  const handleCancelEdit = () => {
-    clearForm();
-
-    setError("");
-    setMessage("");
-  };
+  if (loading) return <Loading label="Loading companies..." />;
 
   return (
-    <div>
-      <h1>Companies</h1>
-
-      {error && <p>{error}</p>}
-
-      {message && <p>{message}</p>}
-
-      <h2>{editingCompanyId ? "Edit Company" : "Add Company"}</h2>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Company Name</label>
-          <br />
-
-          <input
-            type="text"
-            placeholder="Enter company name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Website</label>
-          <br />
-
-          <input
-            type="text"
-            placeholder="https://example.com"
-            value={website}
-            onChange={(event) => setWebsite(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Location</label>
-          <br />
-
-          <input
-            type="text"
-            placeholder="Bangalore"
-            value={location}
-            onChange={(event) => setLocation(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <button type="submit">
-          {editingCompanyId ? "Update Company" : "Add Company"}
+    <>
+      <PageHeader title="Companies" subtitle={`${companies.length} total`}>
+        <button type="button" className="btn btn-primary" onClick={openAddForm}>
+          + Add Company
         </button>
+      </PageHeader>
 
-        {editingCompanyId && (
-          <>
-            {" "}
-            <button type="button" onClick={handleCancelEdit}>
-              Cancel
-            </button>
-          </>
-        )}
-      </form>
+      <Alert>{error}</Alert>
+      <Alert type="success">{message}</Alert>
 
-      <hr />
+      {showForm && (
+        <CompanyForm
+          key={editingCompany?.id ?? "new"}
+          company={editingCompany}
+          onSubmit={handleFormSubmit}
+          onCancel={closeForm}
+        />
+      )}
 
-      <h2>My Companies</h2>
-
-      {companies.length === 0 && <p>No companies found.</p>}
-
-      {companies.map((company) => (
-        <div key={company.id}>
-          <h3>{company.name}</h3>
-          <p>Website: {company.website || "Not provided"}</p>
-          <p>Location: {company.location || "Not provided"}</p>
-          <button onClick={() => handleEdit(company)}>Edit</button>{" "}
-          <button onClick={() => handleDelete(company.id)}>Delete</button>
-          <hr />
+      {companies.length === 0 ? (
+        <div className="card">
+          <EmptyState title="No companies found">
+            Add the companies you're applying to.
+          </EmptyState>
         </div>
-      ))}
-    </div>
+      ) : (
+        <div className="grid">
+          {companies.map((company) => {
+            const websiteUrl = getSafeUrl(company.website);
+
+            return (
+              <article key={company.id} className="card">
+                <h2 className="card-title">{company.name}</h2>
+
+                <p className="muted">
+                  Website:{" "}
+                  {websiteUrl ? (
+                    <a href={websiteUrl} target="_blank" rel="noreferrer">
+                      {company.website}
+                    </a>
+                  ) : (
+                    company.website || "Not provided"
+                  )}
+                </p>
+                <p className="muted">
+                  Location: {company.location || "Not provided"}
+                </p>
+
+                <div className="card-actions">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => handleEdit(company)}
+                    aria-label={`Edit ${company.name}`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(company)}
+                    aria-label={`Delete ${company.name}`}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 

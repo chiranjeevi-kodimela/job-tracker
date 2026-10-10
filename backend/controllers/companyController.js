@@ -91,8 +91,8 @@ const updateCompany = async (req, res) => {
       [name, website || null, location || null, id, req.user.userId],
     );
 
-    if (result.lenth === 0) {
-      return req.status(404).json({
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
         message: "company not found",
       });
     }

@@ -1,127 +1,100 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
+import Alert from "../components/Alert";
+import EmptyState from "../components/EmptyState";
+import InterviewCalendar from "../components/InterviewCalendar";
+import InterviewForm from "../components/InterviewForm";
+import Loading from "../components/Loading";
+import PageHeader from "../components/PageHeader";
 import {
-  getInterviews,
-  getApplications,
   createInterview,
-  updateInterview,
   deleteInterview,
+  getApplications,
+  getInterviews,
+  updateInterview,
 } from "../services/api";
+import { formatDate, formatTime, toISODate } from "../utils/dates";
+import { getSafeUrl } from "../utils/url";
 
 function InterviewsPage() {
   const [interviews, setInterviews] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [applicationId, setApplicationId] = useState("");
-  const [interviewType, setInterviewType] = useState("");
-  const [interviewDate, setInterviewDate] = useState("");
-  const [interviewTime, setInterviewTime] = useState("");
-  const [meetingLink, setMeetingLink] = useState("");
-  const [interviewer, setInterviewer] = useState("");
-  const [notes, setNotes] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [editingInterview, setEditingInterview] = useState(null);
 
-  const [editingInterviewId, setEditingInterviewId] = useState(null);
+  const [calendarDate, setCalendarDate] = useState(() => new Date());
 
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
 
-  const fetchInterviews = async () => {
-    try {
-      const data = await getInterviews();
-
-      setInterviews(data.interviews);
-    } catch (error) {
-      console.error("Interviews fetch error:", error);
-      setError(error.message);
-    }
-  };
+  const fetchInterviews = useCallback(async () => {
+    const data = await getInterviews();
+    setInterviews(data.interviews);
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const applicationsData = await getApplications();
-        const interviewsData = await getInterviews();
+        const [applicationsData, interviewsData] = await Promise.all([
+          getApplications(),
+          getInterviews(),
+        ]);
 
         setApplications(applicationsData.applications);
         setInterviews(interviewsData.interviews);
-      } catch (error) {
-        console.error("Interviews page loading error:", error);
-
-        setError(error.message);
+      } catch (loadError) {
+        setError(loadError.message);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadData();
   }, []);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const closeForm = () => {
+    setShowForm(false);
+    setEditingInterview(null);
+  };
 
+  const openAddForm = () => {
+    setEditingInterview(null);
+    setShowForm(true);
     setError("");
     setMessage("");
-
-    if (!applicationId) {
-      setError("Please select an application.");
-      return;
-    }
-
-    if (!interviewType.trim()) {
-      setError("Interview type is required.");
-      return;
-    }
-
-    if (!interviewDate) {
-      setError("Interview date is required.");
-      return;
-    }
-
-    const interviewData = {
-      application_id: Number(applicationId),
-      interview_type: interviewType,
-      interview_date: interviewDate,
-      interview_time: interviewTime || null,
-      meeting_link: meetingLink,
-      interviewer: interviewer,
-      notes: notes,
-    };
-
-    try {
-      if (editingInterviewId) {
-        await updateInterview(editingInterviewId, interviewData);
-
-        setMessage("Interview updated successfully.");
-
-        clearForm();
-        fetchInterviews();
-
-        return;
-      }
-
-      await createInterview(interviewData);
-
-      setMessage("Interview created successfully.");
-
-      clearForm();
-      fetchInterviews();
-    } catch (error) {
-      console.error("Interview operation error:", error);
-      setError(error.message);
-    }
   };
 
   const handleEdit = (interview) => {
-    setEditingInterviewId(interview.id);
-
-    setApplicationId(String(interview.application_id));
-    setInterviewType(interview.interview_type);
-    setInterviewDate(interview.interview_date || "");
-    setInterviewTime(interview.interview_time || "");
-    setMeetingLink(interview.meeting_link || "");
-    setInterviewer(interview.interviewer || "");
-    setNotes(interview.notes || "");
-
+    setEditingInterview(interview);
+    setShowForm(true);
     setError("");
     setMessage("");
+
+    // Jump the calendar to the interview's month
+    const [year, month] = String(interview.interview_date || "")
+      .slice(0, 10)
+      .split("-")
+      .map(Number);
+
+    if (year && month) setCalendarDate(new Date(year, month - 1, 1));
+  };
+
+  const handleFormSubmit = async (interviewData) => {
+    setError("");
+    setMessage("");
+
+    if (editingInterview) {
+      await updateInterview(editingInterview.id, interviewData);
+      setMessage("Interview updated successfully.");
+    } else {
+      await createInterview(interviewData);
+      setMessage("Interview created successfully.");
+    }
+
+    await fetchInterviews();
+    closeForm();
   };
 
   const handleDelete = async (interviewId) => {
@@ -129,217 +102,146 @@ function InterviewsPage() {
       "Are you sure you want to delete this interview?",
     );
 
-    if (!confirmed) {
-      return;
-    }
+    if (!confirmed) return;
 
     setError("");
     setMessage("");
 
     try {
       await deleteInterview(interviewId);
-
       setMessage("Interview deleted successfully.");
-
-      fetchInterviews();
-    } catch (error) {
-      console.error("Delete interview error:", error);
-      setError(error.message);
+      await fetchInterviews();
+    } catch (deleteError) {
+      setError(deleteError.message);
     }
   };
 
-  const clearForm = () => {
-    setEditingInterviewId(null);
+  if (loading) return <Loading label="Loading interviews..." />;
 
-    setApplicationId("");
-    setInterviewType("");
-    setInterviewDate("");
-    setInterviewTime("");
-    setMeetingLink("");
-    setInterviewer("");
-    setNotes("");
-  };
-
-  const handleCancelEdit = () => {
-    clearForm();
-
-    setError("");
-    setMessage("");
-  };
+  const todayISO = toISODate();
 
   return (
-    <div>
-      <h1>Interviews</h1>
-
-      {error && <p>{error}</p>}
-
-      {message && <p>{message}</p>}
-
-      <hr />
-
-      <h2>{editingInterviewId ? "Edit Interview" : "Schedule Interview"}</h2>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Application</label>
-          <br />
-
-          <select
-            value={applicationId}
-            onChange={(event) => setApplicationId(event.target.value)}
-          >
-            <option value="">Select Application</option>
-
-            {applications.map((application) => (
-              <option key={application.id} value={application.id}>
-                {application.job_title} - {application.company_name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <br />
-
-        <div>
-          <label>Interview Type</label>
-          <br />
-
-          <select
-            value={interviewType}
-            onChange={(event) => setInterviewType(event.target.value)}
-          >
-            <option value="">Select Interview Type</option>
-            <option value="HR Interview">HR Interview</option>
-            <option value="Technical Interview">Technical Interview</option>
-            <option value="Coding Round">Coding Round</option>
-            <option value="Managerial Interview">Managerial Interview</option>
-            <option value="System Design">System Design</option>
-            <option value="Final Interview">Final Interview</option>
-          </select>
-        </div>
-
-        <br />
-
-        <div>
-          <label>Interview Date</label>
-          <br />
-
-          <input
-            type="date"
-            value={interviewDate}
-            onChange={(event) => setInterviewDate(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Interview Time</label>
-          <br />
-
-          <input
-            type="time"
-            value={interviewTime}
-            onChange={(event) => setInterviewTime(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Meeting Link</label>
-          <br />
-
-          <input
-            type="text"
-            placeholder="https://meet.google.com/..."
-            value={meetingLink}
-            onChange={(event) => setMeetingLink(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Interviewer</label>
-          <br />
-
-          <input
-            type="text"
-            placeholder="Interviewer name"
-            value={interviewer}
-            onChange={(event) => setInterviewer(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Notes</label>
-          <br />
-
-          <textarea
-            placeholder="Interview preparation notes"
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            rows="4"
-          />
-        </div>
-
-        <br />
-
-        <button type="submit">
-          {editingInterviewId ? "Update Interview" : "Schedule Interview"}
+    <>
+      <PageHeader
+        title="Interviews"
+        subtitle={`${interviews.length} scheduled`}
+      >
+        <button type="button" className="btn btn-primary" onClick={openAddForm}>
+          + Schedule Interview
         </button>
+      </PageHeader>
 
-        {editingInterviewId && (
-          <>
-            {" "}
-            <button type="button" onClick={handleCancelEdit}>
-              Cancel
-            </button>
-          </>
-        )}
-      </form>
+      <Alert>{error}</Alert>
+      <Alert type="success">{message}</Alert>
 
-      <hr />
+      {showForm && (
+        <InterviewForm
+          key={editingInterview?.id ?? "new"}
+          applications={applications}
+          interview={editingInterview}
+          onSubmit={handleFormSubmit}
+          onCancel={closeForm}
+        />
+      )}
 
-      <h2>My Interviews</h2>
+      <InterviewCalendar
+        interviews={interviews}
+        applications={applications}
+        month={calendarDate}
+        onMonthChange={setCalendarDate}
+        onDelete={handleDelete}
+      />
 
-      {interviews.length === 0 && <p>No interviews found.</p>}
+      <h2 className="section-heading">My Interviews</h2>
 
-      {interviews.map((interview) => (
-        <div key={interview.id}>
-          <h3>{interview.interview_type}</h3>
-          <p>
-            <strong>Company:</strong> {interview.company_name}
-          </p>
-          <p>
-            <strong>Job:</strong> {interview.job_title}
-          </p>
-          <p>
-            <strong>Date:</strong> {interview.interview_date}
-          </p>
-          <p>
-            <strong>Time:</strong> {interview.interview_time || "Not provided"}
-          </p>
-          <p>
-            <strong>Interviewer:</strong>{" "}
-            {interview.interviewer || "Not provided"}
-          </p>
-          <p>
-            <strong>Meeting Link:</strong>{" "}
-            {interview.meeting_link || "Not provided"}
-          </p>
-          <p>
-            <strong>Notes:</strong> {interview.notes || "Not provided"}
-          </p>
-          <button onClick={() => handleEdit(interview)}>Edit</button>{" "}
-          <button onClick={() => handleDelete(interview.id)}>Delete</button>
-          <hr />
+      {interviews.length === 0 ? (
+        <div className="card">
+          <EmptyState title="No interviews found">
+            Schedule an interview once an application moves forward.
+          </EmptyState>
         </div>
-      ))}
-    </div>
+      ) : (
+        <div className="grid">
+          {interviews.map((interview) => {
+            const linkUrl = getSafeUrl(interview.meeting_link);
+            const isPast =
+              String(interview.interview_date).slice(0, 10) < todayISO;
+
+            return (
+              <article
+                key={interview.id}
+                className={`card${isPast ? " card-muted" : ""}`}
+              >
+                <div className="card-header">
+                  <h3 className="card-title">{interview.interview_type}</h3>
+                  {isPast && <span className="badge badge-past">Past</span>}
+                </div>
+
+                <dl className="details details-compact">
+                  <div>
+                    <dt>Company</dt>
+                    <dd>{interview.company_name}</dd>
+                  </div>
+                  <div>
+                    <dt>Job</dt>
+                    <dd>{interview.job_title}</dd>
+                  </div>
+                  <div>
+                    <dt>Date</dt>
+                    <dd>{formatDate(interview.interview_date)}</dd>
+                  </div>
+                  <div>
+                    <dt>Time</dt>
+                    <dd>
+                      {formatTime(interview.interview_time, "Not provided")}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Interviewer</dt>
+                    <dd>{interview.interviewer || "Not provided"}</dd>
+                  </div>
+                  <div>
+                    <dt>Meeting Link</dt>
+                    <dd>
+                      {linkUrl ? (
+                        <a href={linkUrl} target="_blank" rel="noreferrer">
+                          Join meeting
+                        </a>
+                      ) : (
+                        interview.meeting_link || "Not provided"
+                      )}
+                    </dd>
+                  </div>
+                </dl>
+
+                {interview.notes && (
+                  <p className="prewrap muted">{interview.notes}</p>
+                )}
+
+                <div className="card-actions">
+                  <button
+                    type="button"
+                    className="btn btn-outline btn-sm"
+                    onClick={() => handleEdit(interview)}
+                    aria-label={`Edit ${interview.interview_type} for ${interview.job_title}`}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(interview.id)}
+                    aria-label={`Delete ${interview.interview_type} for ${interview.job_title}`}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </>
   );
 }
 

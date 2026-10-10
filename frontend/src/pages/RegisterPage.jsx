@@ -1,111 +1,110 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
+
+import Alert from "../components/Alert";
+import AuthLayout from "../components/AuthLayout";
+import Field from "../components/Field";
+import PasswordStrength from "../components/PasswordStrength";
+import { useAuth } from "../context/useAuth";
+import { registerUser } from "../services/api";
+import { isValidEmail, validatePassword } from "../utils/validation";
 
 function RegisterPage() {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-
     setError("");
 
-    if (!name || !email || !password) {
+    if (!name.trim() || !email || !password) {
       setError("All fields are required.");
       return;
     }
 
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+    if (!isValidEmail(email)) {
+      setError("Please enter a valid email.");
       return;
     }
 
-    const registerData = {
-      name,
-      email,
-      password,
-    };
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      setError(passwordError);
+      return;
+    }
 
+    setSubmitting(true);
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(registerData),
+      await registerUser({ name, email, password });
+      navigate("/login", {
+        replace: true,
+        state: { message: "Account created. Please log in." },
       });
-
-      const data = await response.json();
-
-      console.log("Register response:", data);
-
-      if (!response.ok) {
-        setError(data.message || "Registration failed.");
-        return;
-      }
-      console.log("Registration successfull");
-    } catch (error) {
-      console.error("Registration error:", error);
-      setError("Unable to connect to the server.");
+    } catch (registerError) {
+      setError(registerError.message || "Registration failed.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
   return (
-    <div>
-      <h1>Register</h1>
+    <AuthLayout
+      title="Create your account"
+      subtitle="Start organising your job search."
+      footer={
+        <>
+          Already have an account? <Link to="/login">Login here</Link>
+        </>
+      }
+    >
+      <Alert>{error}</Alert>
 
-      {error && <p>{error}</p>}
+      <form className="form" onSubmit={handleSubmit} noValidate>
+        <Field
+          label="Name"
+          type="text"
+          placeholder="Enter your name"
+          autoComplete="name"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Name</label>
-          <br />
-          <input
-            type="text"
-            placeholder="Enter your name"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-        </div>
-
-        <br />
-
-        <div>
-          <label>Email</label>
-          <br />
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-        </div>
-
-        <br />
+        <Field
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          autoComplete="email"
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
 
         <div>
-          <label>Password</label>
-          <br />
-          <input
+          <Field
+            label="Password"
             type="password"
-            placeholder="Enter your password"
+            placeholder="At least 8 characters"
+            autoComplete="new-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
+          <PasswordStrength password={password} />
         </div>
 
-        <br />
-
-        <button type="submit">Register</button>
+        <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+          {submitting ? "Creating account..." : "Register"}
+        </button>
       </form>
-
-      <p>
-        Already have an account? <Link to="/login">Login here</Link>
-      </p>
-    </div>
+    </AuthLayout>
   );
 }
 
