@@ -38,37 +38,7 @@ Job searching means juggling many companies, roles, statuses and interview dates
 - Nodemailer for password reset emails
 - `cors`, `dotenv`
 
-## Application Screenshots
 
-> Add your screenshots to `docs/screenshots/` using the file names below.
-
-| Screen | File name |
-| --- | --- |
-| Login page | `docs/screenshots/login.png` |
-| Register page | `docs/screenshots/register.png` |
-| Forgot password page | `docs/screenshots/forgot-password.png` |
-| Reset password page | `docs/screenshots/reset-password.png` |
-| Dashboard | `docs/screenshots/dashboard.png` |
-| Applications list | `docs/screenshots/applications.png` |
-| Application details | `docs/screenshots/application-details.png` |
-| Companies | `docs/screenshots/companies.png` |
-| Interviews calendar | `docs/screenshots/interviews-calendar.png` |
-| Profile and change password | `docs/screenshots/profile.png` |
-
-```md
-![Login](docs/screenshots/login.png)
-![Register](docs/screenshots/register.png)
-![Forgot Password](docs/screenshots/forgot-password.png)
-![Reset Password](docs/screenshots/reset-password.png)
-![Dashboard](docs/screenshots/dashboard.png)
-![Applications](docs/screenshots/applications.png)
-![Application Details](docs/screenshots/application-details.png)
-![Companies](docs/screenshots/companies.png)
-![Interviews Calendar](docs/screenshots/interviews-calendar.png)
-![Profile](docs/screenshots/profile.png)
-```
-
-Replace the block above with the image links once the files exist (they will then render on GitHub).
 
 ## Project Folder Structure
 
