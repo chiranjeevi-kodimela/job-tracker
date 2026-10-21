@@ -2,7 +2,11 @@ require("dotenv").config({ quiet: true });
 
 const express = require("express");
 const cors = require("cors");
-
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  }),
+);
 const db = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
@@ -12,11 +16,6 @@ const interviewRoutes = require("./routes/interviewRoutes");
 
 const app = express();
 
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  }),
-);
 app.use(express.json());
 
 app.get("/", (req, res) => {
