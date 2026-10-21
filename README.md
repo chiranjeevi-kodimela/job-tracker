@@ -1,60 +1,72 @@
-
 # Job Tracker
 
-A full-stack web application for tracking job applications, companies and interviews in one place, with secure authentication, a dashboard, profile management and password reset.
+A full-stack job application management platform to organize companies, track application progress, schedule interviews, and monitor your job search from one dashboard.
+
+**Live Demo:** [Job Tracker](https://job-tracker-eta-six-12.vercel.app)  
+**Backend API:** [Job Tracker API](https://job-tracker-backend-0kpo.onrender.com)  
+**Source Code:** [GitHub Repository](https://github.com/chiranjeevi-kodimela/job-tracker)
 
 ## Overview
 
-Job searching means juggling many companies, roles, statuses and interview dates. Job Tracker keeps all of that organised: add the companies you're targeting, log each application and its status, schedule interviews on a calendar, and see your progress on a dashboard.
+Managing a job search involves tracking multiple companies, applications, interview schedules, and application statuses. Job Tracker brings these details together in one place, helping users organize their search and monitor their progress.
+
+Users can register securely, manage companies and applications, schedule interviews using a calendar, export application data to CSV, and update their account details.
 
 ## Features
 
-- **Authentication:** register, log in, log out, with JWT-based sessions
-- **Dashboard:** totals for applications, companies and interviews, status breakdown, upcoming interviews and recent applications
-- **Companies:** add, edit and delete companies, with website and location
-- **Applications:** add, edit, delete and view details for each application
-  - Statuses: Applied, Assessment, Interview, Selected, Rejected
-  - Search, status filter, sorting and pagination
-  - Export the filtered list to CSV
-- **Interviews:** schedule, edit and delete interviews linked to an application, with a monthly calendar view and a list of upcoming and past interviews
-- **Profile management:** update your name and email
-- **Password change:** change your password while logged in (requires the current password)
-- **Password reset:** "Forgot password" email link that is time-limited and single-use
-- **Responsive UI:** works on desktop and mobile, with a collapsible navigation menu
+- **Authentication:** User registration, login, logout, and JWT-based authentication.
+- **Dashboard:** Overview of applications, companies, interviews, application statuses, recent applications, and upcoming interviews.
+- **Company Management:** Create, view, update, and delete companies, including their websites and locations.
+- **Application Tracking:** Manage job applications and their details throughout the hiring process.
+- **Application Statuses:** Applied, Assessment, Interview, Selected, and Rejected.
+- **Search and Filtering:** Search applications, filter by status, sort results, and navigate paginated lists.
+- **CSV Export:** Export filtered application data.
+- **Interview Scheduling:** Schedule, edit, and delete interviews linked to applications.
+- **Interview Calendar:** View interviews in a monthly calendar, with separate lists for upcoming and past interviews.
+- **Profile Management:** Update account name and email.
+- **Password Management:** Change passwords securely and reset forgotten passwords using time-limited, single-use links.
+- **Responsive Design:** Interface designed for desktop and mobile screens.
 
 ## Tech Stack
 
-**Frontend**
+### Frontend
 - React 19
 - Vite
 - React Router
-- Plain CSS (custom design system in `src/index.css`)
+- JavaScript
+- Custom CSS
 
-**Backend**
-- Node.js and Express 5
-- MySQL (`mysql2`)
+### Backend
+- Node.js
+- Express 5
+- MySQL
+- `mysql2`
 - JSON Web Tokens (`jsonwebtoken`)
-- `bcryptjs` for password hashing
-- Nodemailer for password reset emails
-- `cors`, `dotenv`
+- `bcryptjs`
+- Nodemailer
+- `cors`
+- `dotenv`
 
+### Database and Deployment
+- MySQL hosted on Aiven
+- Backend deployed on Render
+- Frontend deployed on Vercel
 
+## Project Structure
 
-## Project Folder Structure
-
-```
+```text
 job-tracker/
 ├── backend/
 │   ├── config/
-│   │   └── db.js                    # MySQL connection pool
+│   │   └── db.js
 │   ├── controllers/
 │   │   ├── applicationController.js
-│   │   ├── authController.js        # register, login, forgot/reset password
+│   │   ├── authController.js
 │   │   ├── companyController.js
 │   │   ├── interviewController.js
-│   │   └── userController.js        # profile + change password
+│   │   └── userController.js
 │   ├── middleware/
-│   │   └── authMiddleware.js        # JWT verification
+│   │   └── authMiddleware.js
 │   ├── routes/
 │   │   ├── applicationRoutes.js
 │   │   ├── authRoutes.js
@@ -62,24 +74,23 @@ job-tracker/
 │   │   ├── interviewRoutes.js
 │   │   └── userRoutes.js
 │   ├── utils/
-│   │   ├── mailer.js                # password reset emails
-│   │   └── validators.js            # email + password validation
-│   ├── app.js                       # Express app
-│   ├── server.js                    # starts the server
+│   │   ├── mailer.js
+│   │   └── validators.js
+│   ├── app.js
+│   ├── server.js
 │   ├── .env.example
 │   └── package.json
 ├── database/
-│   ├── schema.sql                   # full schema for fresh installs
+│   ├── schema.sql
 │   └── migrations/
-│       └── 001_password_resets.sql  # for existing databases
+│       └── 001_password_resets.sql
 ├── frontend/
 │   ├── src/
-│   │   ├── components/              # Navbar, forms, calendar, pagination, etc.
-│   │   ├── context/                 # authentication context
-│   │   ├── pages/                   # Dashboard, Applications, Companies, ...
+│   │   ├── components/
+│   │   ├── context/
+│   │   ├── pages/
 │   │   ├── services/
-│   │   │   └── api.js               # API client
-│   │   ├── utils/                   # dates, CSV, validation, helpers
+│   │   ├── utils/
 │   │   ├── App.jsx
 │   │   ├── constants.js
 │   │   ├── index.css
@@ -87,217 +98,271 @@ job-tracker/
 │   ├── index.html
 │   └── package.json
 ├── docs/
-│   └── screenshots/                 # add your screenshots here
+│   └── screenshots/
 └── README.md
 ```
 
-## Prerequisites
+## Getting Started
+
+### Prerequisites
 
 - [Node.js](https://nodejs.org/) 18 or newer
-- npm (comes with Node.js)
+- npm
 - [MySQL](https://www.mysql.com/) 8 or newer
 - Git
 
-## Installation and Setup
-
-**1. Clone the repository**
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/chiranjeevi-kodimela/job-tracker.git
 cd job-tracker
 ```
 
-**2. Set up the database**
+### 2. Set Up the Database
 
-For a fresh install:
+For a fresh local MySQL installation, run:
 
 ```bash
 mysql -u root -p < database/schema.sql
 ```
 
-This creates the `job_tracker` database and all tables, including `password_resets`.
+This creates the `job_tracker` database and the tables required by the application.
 
-If you already have the database from an earlier version, run only the migration:
+For an existing database that predates password-reset functionality, run the migration:
 
 ```bash
-mysql -u root -p < database/migrations/001_password_resets.sql
+mysql -u root -p job_tracker < database/migrations/001_password_resets.sql
 ```
 
-**3. Set up the backend**
+**Note:** If using a managed database such as Aiven, connect to the database provided by your service and execute the schema there. Adjust or omit the `CREATE DATABASE` and `USE` statements as appropriate for the database your provider supplies.
+
+### 3. Configure the Backend
 
 ```bash
 cd backend
 npm install
-cp .env.example .env
 ```
 
-Then edit `.env` with your own values (see [Environment Variables](#environment-variables)).
+Copy `.env.example` to `.env` and configure your environment variables.
 
-**4. Set up the frontend**
+```env
+PORT=5000
+
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_mysql_password
+DB_NAME=job_tracker
+
+JWT_SECRET=replace_with_a_long_random_secret
+FRONTEND_URL=http://localhost:5173
+
+SMTP_HOST=
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=
+SMTP_PASS=
+MAIL_FROM=
+```
+
+Use your own database credentials and a strong, unique JWT secret. Configure the SMTP variables if you want password-reset links delivered by email.
+
+For a managed MySQL service, use the host, port, username, password, database name, and TLS configuration supplied by your provider.
+
+### 4. Configure the Frontend
+
+Open a second terminal:
 
 ```bash
-cd ../frontend
+cd frontend
 npm install
 ```
 
-## Environment Variables
+Create a `.env` file in the `frontend` directory if you need to override the API URL:
 
-### Backend (`backend/.env`)
+```env
+VITE_API_URL=http://localhost:5000/api
+```
 
-| Variable | Description | Example |
-| --- | --- | --- |
-| `DB_HOST` | MySQL host | `localhost` |
-| `DB_USER` | MySQL user | `root` |
-| `DB_PASSWORD` | MySQL password | `your_password` |
-| `DB_NAME` | Database name | `job_tracker` |
-| `PORT` | API port | `5000` |
-| `JWT_SECRET` | Long random string used to sign tokens | `change-me` |
-| `FRONTEND_URL` | Frontend origin, used for CORS and reset links | `http://localhost:5173` |
-| `SMTP_HOST` | SMTP server (optional) | `smtp.gmail.com` |
-| `SMTP_PORT` | SMTP port (optional) | `587` |
-| `SMTP_SECURE` | `true` for port 465 (optional) | `false` |
-| `SMTP_USER` | SMTP username (optional) | `you@example.com` |
-| `SMTP_PASS` | SMTP password or app password (optional) | `your_app_password` |
-| `MAIL_FROM` | "From" address for emails (optional) | `Job Tracker <no-reply@example.com>` |
+### 5. Run the Application
 
-If `SMTP_HOST` is empty, the password reset link is printed in the backend console instead of being emailed. This is handy during development.
-
-### Frontend (optional)
-
-| Variable | Description | Default |
-| --- | --- | --- |
-| `VITE_API_URL` | Backend API base URL | `http://localhost:5000/api` |
-
-Never commit your `.env` file. It is already listed in `.gitignore`.
-
-## Running the Frontend and Backend
-
-Open two terminals.
-
-**Backend**
+Start the backend in the first terminal:
 
 ```bash
 cd backend
-npm run dev      # development, auto-restarts with nodemon
-# or
-npm start        # production
+npm run dev
 ```
 
-The API runs at `http://localhost:5000`.
-
-**Frontend**
+Start the frontend in the second terminal:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-The app runs at `http://localhost:5173`.
+The local application will be available at:
 
-Other frontend scripts:
+- **Frontend:** http://localhost:5173
+- **Backend:** http://localhost:5000
+
+### Available Frontend Scripts
+
+Run these commands from the `frontend` directory:
 
 ```bash
-npm run build     # production build
-npm run preview   # preview the production build
-npm run lint      # run ESLint
+npm run dev
+npm run build
+npm run preview
+npm run lint
 ```
 
-## API Endpoints
+## Environment Variables
 
-Base URL: `http://localhost:5000/api`
+### Backend
 
-All routes except those marked **Public** require the header `Authorization: Bearer <token>`.
+| Variable | Description |
+|---|---|
+| `PORT` | HTTP port used by the backend |
+| `DB_HOST` | MySQL server hostname |
+| `DB_PORT` | MySQL server port |
+| `DB_USER` | MySQL username |
+| `DB_PASSWORD` | MySQL password |
+| `DB_NAME` | Database name |
+| `JWT_SECRET` | Secret used to sign JWTs |
+| `FRONTEND_URL` | Frontend origin used for CORS and password-reset links |
+| `SMTP_HOST` | SMTP server hostname |
+| `SMTP_PORT` | SMTP server port |
+| `SMTP_SECURE` | Whether to use implicit TLS, typically for port 465 |
+| `SMTP_USER` | SMTP authentication username |
+| `SMTP_PASS` | SMTP password or app password |
+| `MAIL_FROM` | Sender address for outgoing emails |
 
-### Auth
+SMTP variables are optional during development. When SMTP is not configured, the password-reset link is printed in the backend console instead of being emailed, if supported by the current configuration.
+
+### Frontend
+
+| Variable | Description | Local Default |
+|---|---|---|
+| `VITE_API_URL` | Backend API base URL | `http://localhost:5000/api` |
+
+Never commit `.env` files or expose database credentials, SMTP passwords, or JWT secrets in source control.
+
+## API Documentation
+
+The local API base URL is:
+
+```text
+http://localhost:5000/api
+```
+
+The production API base URL is:
+
+```text
+https://job-tracker-backend-0kpo.onrender.com/api
+```
+
+Protected endpoints require a valid JWT in the request header:
+
+```http
+Authorization: Bearer <token>
+```
+
+### Authentication
 
 | Method | Endpoint | Description | Access |
-| --- | --- | --- | --- |
-| POST | `/auth/register` | Create an account | Public |
-| POST | `/auth/login` | Log in and receive a JWT | Public |
-| POST | `/auth/forgot-password` | Email a password reset link | Public |
-| POST | `/auth/reset-password` | Set a new password using a reset token | Public |
+|---|---|---|---|
+| POST | `/auth/register` | Register a new account | Public |
+| POST | `/auth/login` | Authenticate and receive a JWT | Public |
+| POST | `/auth/forgot-password` | Request a password-reset link | Public |
+| POST | `/auth/reset-password` | Reset a password using a token | Public |
 
 ### Users
 
 | Method | Endpoint | Description |
-| --- | --- | --- |
-| GET | `/users/me` | Get the current user |
-| PUT | `/users/me` | Update name and email |
-| PUT | `/users/me/password` | Change password (needs current password) |
+|---|---|---|
+| GET | `/users/me` | Get the current user's profile |
+| PUT | `/users/me` | Update the user's name and email |
+| PUT | `/users/me/password` | Change the password |
 
 ### Companies
 
 | Method | Endpoint | Description |
-| --- | --- | --- |
-| GET | `/companies` | List your companies |
+|---|---|---|
+| GET | `/companies` | List companies |
 | POST | `/companies` | Create a company |
-| GET | `/companies/:id` | Get one company |
+| GET | `/companies/:id` | Get a company |
 | PUT | `/companies/:id` | Update a company |
-| DELETE | `/companies/:id` | Delete a company (also deletes its applications and interviews) |
+| DELETE | `/companies/:id` | Delete a company |
 
 ### Applications
 
 | Method | Endpoint | Description |
-| --- | --- | --- |
-| GET | `/applications` | List your applications |
+|---|---|---|
+| GET | `/applications` | List applications |
 | POST | `/applications` | Create an application |
-| GET | `/applications/:id` | Get one application |
+| GET | `/applications/:id` | Get an application |
 | PUT | `/applications/:id` | Update an application |
 | DELETE | `/applications/:id` | Delete an application |
 
 ### Interviews
 
 | Method | Endpoint | Description |
-| --- | --- | --- |
-| GET | `/interviews` | List your interviews |
+|---|---|---|
+| GET | `/interviews` | List interviews |
 | POST | `/interviews` | Schedule an interview |
-| GET | `/interviews/:id` | Get one interview |
+| GET | `/interviews/:id` | Get an interview |
 | PUT | `/interviews/:id` | Update an interview |
 | DELETE | `/interviews/:id` | Delete an interview |
 
-### Example request
+### Example Login Request
 
 ```http
 POST /api/auth/login
 Content-Type: application/json
+```
 
+```json
 {
   "email": "jane@example.com",
   "password": "password123"
 }
 ```
 
-## Security Features
+## Security
 
-- Passwords are hashed with bcrypt and never stored in plain text
-- JWT authentication with a 1-day expiry; expired sessions log the user out in the UI
-- Every query is scoped to the logged-in user, so users can only access their own data
-- Parameterised SQL queries to prevent SQL injection
-- Password reset tokens are random, stored only as SHA-256 hashes, expire after 1 hour and can be used once
-- "Forgot password" gives the same response whether or not the email exists, so accounts can't be discovered
-- Changing a password requires the current password
-- Password rules enforced on both frontend and backend (8 to 72 characters)
-- CORS restricted to the configured frontend origin
-- Links from user-entered data are only rendered if they are `http` or `https`
-- HTML in reset emails is escaped
-- Secrets live in `.env`, which is excluded from version control
+- Passwords are hashed using `bcryptjs`.
+- JWT-based authentication protects private API endpoints.
+- User-specific queries restrict access to each user's data.
+- Parameterized SQL queries help prevent SQL injection.
+- Password-reset tokens are stored as SHA-256 hashes, expire after one hour, and are single-use.
+- Password-reset responses avoid revealing whether an email address is registered.
+- Changing a password requires the current password.
+- Password validation is enforced on the frontend and backend.
+- CORS is restricted to the configured frontend origin.
+- User-provided links are restricted to HTTP and HTTPS protocols.
+- HTML in password-reset emails is escaped.
+- Environment secrets are kept outside version control.
 
 ## Future Improvements
 
 - Automated unit and integration tests
-- Rate limiting on login and password reset endpoints
-- Email verification on sign-up
-- Store tokens in httpOnly cookies and add refresh tokens
-- Interview reminders by email or notification
-- Kanban board view for application statuses
+- Login and password-reset rate limiting
+- Email verification during registration
+- Secure HTTP-only cookies and refresh-token support
+- Interview reminders and notifications
+- Kanban board for application statuses
 - Resume and document attachments
 - Server-side search and pagination
 - Dark mode
-- Docker setup and cloud deployment
+- Docker-based development and deployment
 
-## Author and Contact
+## Author
 
 **Chiranjeevi Kodimela**
 
-- Email: [chirukodimela@email.com](mailto:chirukodimela@email.com)
 - GitHub: [@chiranjeevi-kodimela](https://github.com/chiranjeevi-kodimela)
+- Email: [chirukodimela@email.com](mailto:chirukodimela@email.com)
+
+---
+
+If you find this project useful, consider giving the repository a star.
