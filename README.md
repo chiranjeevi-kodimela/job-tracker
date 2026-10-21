@@ -1,4 +1,4 @@
-[README.md](https://github.com/user-attachments/files/33281446/README.md)
+
 # Job Tracker
 
 A full-stack web application for tracking job applications, companies and interviews in one place, with secure authentication, a dashboard, profile management and password reset.
