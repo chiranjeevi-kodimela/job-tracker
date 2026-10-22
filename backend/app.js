@@ -38,9 +38,7 @@ app.get("/api/test-db", async (req, res) => {
     });
   }
 });
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok" });
-});
+
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/companies", companyRoutes);
